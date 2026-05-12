@@ -6,17 +6,36 @@ from agents.memory_agent import load_past_preferences, save_current_session
 
 
 def display_recommendations(recommendations: list[dict], user_input: str) -> None:
+    """
+    Display final recommendations in a clean formatted output.
+
+    Args:
+        recommendations: Final list of explained book recommendations
+        user_input: Original user input for context
+    """
     print("\n" + "=" * 60)
-    print("BOOKMATCH RECOMMENDATIONS")
+    print("📚 BOOKMATCH RECOMMENDATIONS")
     print("=" * 60)
     print(f"Based on: \"{user_input}\"\n")
 
     for i, book in enumerate(recommendations, 1):
-        print(f"{'Top 1:' if i == 1 else 'Book:'} #{i}: {book['title']}")
-        print(f"   Author: {book['author']}")
-        print(f"   Year:   {book.get('year', 'Unknown')}")
-        print(f"   Score:  {book.get('match_score', 0)}/100")
-        print(f"   Why:    {book.get('explanation', '')}")
+        medal = "🥇" if i == 1 else "📖"
+        print(f"{medal} #{i}: {book['title']}")
+        print(f"   Author:  {book['author']}")
+        print(f"   Year:    {book.get('year', 'Unknown')}")
+        print(f"   Score:   {book.get('match_score', 0)}/100")
+        print(f"   Rating:  {book.get('rating', 0.0)}/5.0")
+
+        # Show description if available
+        description = book.get("description", "")
+        if description:
+            # Trim to one clean sentence for display
+            short = description.split(".")[0].strip()
+            if len(short) > 20:
+                print(f"   About:   {short}.")
+
+        print(f"   Why:     {book.get('explanation', '')}")
+        print(f"   Source:  {book.get('source', '')}")
         print()
 
     print("=" * 60)
@@ -50,11 +69,15 @@ def run():
     print(f"  Detected: genres={preferences.get('genres')}, themes={preferences.get('themes')}, mood={preferences.get('mood')}")
 
     print("\nStep 3: Searching book databases...")
-    candidates = search_books(query)
+    year_from = preferences.get("year_from")
+    author = preferences.get("author")
 
-    if not candidates:
-        print("No books found. Please try a different description.")
-        return
+    if year_from:
+        print(f"  Year filter: books published after {year_from}")
+    if author:
+        print(f"  Author filter: '{author}'")
+
+    candidates = search_books(query, year_from=year_from, author=author)
 
     print("\nStep 4: Ranking candidates...")
     top_books = rank_books(candidates, preferences)
